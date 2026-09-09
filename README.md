@@ -6,7 +6,7 @@
 
 **Customer Name:** Henry Edison
 
-**Student Full Name:** ⟨SKRIV DITT FULLSTÄNDIGA NAMN HÄR⟩
+**Student Full Name:** Mohamed Kdimate
 
 ## Project Aim and Objectives
 
