@@ -2,11 +2,11 @@
 
 ## Project Description
 
-**Project Name:** *[Your project name]*
+**Project Name:** *Campus Exchange*
 
-**Customer Name:** *[Your customer's name]*
+**Customer Name:** *Henry Edison*
 
-**Student Full Name:** *[Your full name. This helps match your repository to you, even if your GitHub handle does not identify you.]*
+**Student Full Name:** *Mohamed Kdimate*
 
 ### Project Aim and Objectives
 
