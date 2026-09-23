@@ -64,7 +64,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `Reminder: no commits in ${days} days`,
-              body: `Hi @${login} — no commits have been made to this repo in the last ${days} days. Please commit your progress regularly per the course workflow (see README.md).`,
+              body: `@${login} — no commits have been made to this repo in the last ${days} days. Please commit your progress regularly per the course workflow (see README.md).`,
               assignees: [login],
               labels: ["commit-reminder"],
             });

@@ -2,33 +2,34 @@
 {% block content %}
     <p><a href="{{ url_for('home') }}">&larr; Back to items</a></p>
     <h2>{{ item.title }}</h2>
-    {% if item.category %}<p><em>{{ item.category }}</em></p>{% endif %}
-    <p>{{ item.description }}</p>
+    {% if item.category %}<span class="cat">{{ item.category }}</span>{% endif %}
+    {% if item.description %}<p class="muted">{{ item.description }}</p>{% endif %}
 
     <h3>Request to borrow</h3>
     <form method="post" action="{{ url_for('request_item', item_id=item.id) }}">
-        <p><label>Your name<br><input type="text" name="requester_name" required></label></p>
-        <p><button type="submit">Send request</button></p>
+        <label><span class="lbl">Your name</span><input type="text" name="requester_name" required></label>
+        <button type="submit">Send request</button>
     </form>
 
     <h3>Requests</h3>
     {% if item.requests %}
-        <ul>
+        <div>
         {% for r in item.requests %}
-            <li>
-            {{ r.requester_name }} — <strong>{{ r.status }}</strong>
+            <div class="req-row">
+            <span>{{ r.requester_name }}</span>
+            <span class="badge {{ r.status }}">{{ r.status }}</span>
             {% if r.status == "pending" %}
-                <form method="post" action="{{ url_for('accept_request', request_id=r.id) }}" style="display:inline">
-                <button type="submit">Accept</button>
+                <form method="post" action="{{ url_for('accept_request', request_id=r.id) }}">
+                <button class="btn small" type="submit">Accept</button>
                 </form>
-                <form method="post" action="{{ url_for('reject_request', request_id=r.id) }}" style="display:inline">
-                <button type="submit">Reject</button>
+                <form method="post" action="{{ url_for('reject_request', request_id=r.id) }}">
+                <button class="btn small ghost" type="submit">Reject</button>
                 </form>
             {% endif %}
-            </li>
+            </div>
         {% endfor %}
-        </ul>
+        </div>
     {% else %}
-        <p>No requests yet.</p>
+        <p class="muted">No requests yet.</p>
     {% endif %}
 {% endblock %}

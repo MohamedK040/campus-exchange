@@ -52,7 +52,7 @@ def register():
             return render_template("register.html", error="Please use your BTH email address.")
         if User.query.filter_by(email=email).first():
             return render_template("register.html", error="That email is already registered.")
-        user = User(name=name, email=email, password_hash=generate_password_hash(password))
+        user = User(name=name, email=email, password_hash=generate_password_hash(password, method="pbkdf2:sha256"))
         db.session.add(user)
         db.session.commit()
         login_user(user)
@@ -126,12 +126,13 @@ def accept_request(request_id):
     return redirect(url_for("item_detail", item_id=borrow.item_id))
 
 
-@app.route("/requests/<int:request_id>/reject", methods=["POST"])
-def reject_request(request_id):
-    borrow = Request.query.get_or_404(request_id)
-    borrow.status = "rejected"
+@app.route("/items/<int:item_id>/delete", methods=["POST"])
+def delete_item(item_id):
+    item = Item.query.get_or_404(item_id)
+    Request.query.filter_by(item_id=item.id).delete()
+    db.session.delete(item)
     db.session.commit()
-    return redirect(url_for("item_detail", item_id=borrow.item_id))
+    return redirect(url_for("home"))
 
 
 if __name__ == "__main__":
