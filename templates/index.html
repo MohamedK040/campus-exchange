@@ -1,17 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
     <h2>Available items</h2>
+
+    <form method="get" action="{{ url_for('home') }}">
+        <input type="text" name="q" placeholder="Search items..." value="{{ q }}">
+        <button type="submit">Search</button>
+    </form>
+
     {% if items %}
         <ul>
         {% for item in items %}
             <li>
-            <strong>{{ item.title }}</strong>
+            <strong><a href="{{ url_for('item_detail', item_id=item.id) }}">{{ item.title }}</a></strong>
             {% if item.category %}<em>({{ item.category }})</em>{% endif %}<br>
             {{ item.description }}
             </li>
         {% endfor %}
         </ul>
     {% else %}
-        <p>No items yet. Be the first to <a href="{{ url_for('new_item') }}">add one</a>!</p>
+        <p>No items found.</p>
     {% endif %}
 {% endblock %}

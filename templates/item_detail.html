@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+    <p><a href="{{ url_for('home') }}">&larr; Back to items</a></p>
+    <h2>{{ item.title }}</h2>
+    {% if item.category %}<p><em>{{ item.category }}</em></p>{% endif %}
+    <p>{{ item.description }}</p>
+
+    <h3>Request to borrow</h3>
+    <form method="post" action="{{ url_for('request_item', item_id=item.id) }}">
+        <p><label>Your name<br><input type="text" name="requester_name" required></label></p>
+        <p><button type="submit">Send request</button></p>
+    </form>
+
+    <h3>Requests</h3>
+    {% if item.requests %}
+        <ul>
+        {% for r in item.requests %}
+            <li>
+            {{ r.requester_name }} — <strong>{{ r.status }}</strong>
+            {% if r.status == "pending" %}
+                <form method="post" action="{{ url_for('accept_request', request_id=r.id) }}" style="display:inline">
+                <button type="submit">Accept</button>
+                </form>
+                <form method="post" action="{{ url_for('reject_request', request_id=r.id) }}" style="display:inline">
+                <button type="submit">Reject</button>
+                </form>
+            {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No requests yet.</p>
+    {% endif %}
+{% endblock %}

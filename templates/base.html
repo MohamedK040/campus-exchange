@@ -6,7 +6,8 @@
     <style>
         body { font-family: system-ui, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 16px; }
         header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; }
-        a { color: #0e7c73; text-decoration: none; }
+        nav a { margin-left: 12px; }
+        a { color: #0e3e7c; text-decoration: none; }
         li { margin-bottom: 12px; }
         input, textarea { width: 100%; padding: 6px; }
         button { padding: 8px 16px; }
@@ -15,7 +16,16 @@
 <body>
     <header>
         <a href="{{ url_for('home') }}"><h1>Campus Exchange</h1></a>
+        <nav>
         <a href="{{ url_for('new_item') }}">+ Add item</a>
+        {% if current_user.is_authenticated %}
+            <span>Hi, {{ current_user.name }}</span>
+            <a href="{{ url_for('logout') }}">Log out</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Log in</a>
+            <a href="{{ url_for('register') }}">Register</a>
+        {% endif %}
+        </nav>
     </header>
     <main>
         {% block content %}{% endblock %}

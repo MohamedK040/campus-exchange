@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Register</h2>
+    {% if error %}<p style="color:#c1443a">{{ error }}</p>{% endif %}
+    <form method="post">
+        <p><label>Name<br><input type="text" name="name" required></label></p>
+        <p><label>BTH email<br><input type="email" name="email" required></label></p>
+        <p><label>Password<br><input type="password" name="password" required></label></p>
+        <p><button type="submit">Create account</button></p>
+    </form>
+    <p>Already have an account? <a href="{{ url_for('login') }}">Log in</a></p>
+{% endblock %}
