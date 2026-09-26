@@ -1,13 +1,28 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
+import random
+from flask_mail import Mail, Message
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(basedir, "campus_exchange.db")
 app.config["SECRET_KEY"] = "change-this-to-something-secret"
+
+app.config["MAIL_SERVER"] = "smtp.gmail.com"
+app.config["MAIL_PORT"] = 587
+app.config["MAIL_USE_TLS"] = True
+app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME")
+app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
+
+mail = Mail(app)
+
+reset_codes = {} 
 
 db = SQLAlchemy(app)
 
@@ -41,13 +56,25 @@ class Request(db.Model):
     status = db.Column(db.String(20), default="pending")
     item = db.relationship("Item", backref="requests")
 
+def send_reset_email(to_email, code):
+    msg = Message("Campus Exchange password reset code",
+            sender=app.config["MAIL_USERNAME"],
+            recipients=[to_email])
+    msg.body = f"Your password reset code is: {code}"
+    mail.send(msg)
+
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        name = request.form["name"]
+        first_name = request.form["first_name"]
+        last_name = request.form["last_name"]
+        name = first_name + " " + last_name
         email = request.form["email"]
         password = request.form["password"]
+        confirm = request.form["confirm_password"]
+        if password != confirm:
+            return render_template("register.html", error="Passwords do not match.")
         if not email.endswith("student.bth.se"):
             return render_template("register.html", error="Please use your BTH email address.")
         if User.query.filter_by(email=email).first():
@@ -65,13 +92,46 @@ def login():
     if request.method == "POST":
         email = request.form["email"]
         password = request.form["password"]
+        remember = request.form.get("remember")
         user = User.query.filter_by(email=email).first()
         if user and check_password_hash(user.password_hash, password):
-            login_user(user)
+            login_user(user, remember=bool(remember))
             return redirect(url_for("home"))
         return render_template("login.html", error="Wrong email or password.")
     return render_template("login.html")
 
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form["email"]
+        if not email.endswith("student.bth.se"):
+            return render_template("forgot_password.html", error="Please use your BTH email address.")
+        session["reset_email"] = email
+        user = User.query.filter_by(email=email).first()
+        if user:
+            code = str(random.randint(100000, 999999))
+            reset_codes[email] = code
+            send_reset_email(email, code)
+        return render_template("reset_password.html", email=email)
+    return render_template("forgot_password.html")
+
+@app.route("/reset-password", methods=["POST"])
+def reset_password():
+    email = session.get("reset_email")
+    code = request.form["code"]
+    password = request.form["password"]
+    confirm = request.form["confirm_password"]
+    if password != confirm:
+        return render_template("reset_password.html", email=email, error="Passwords do not match.")
+    if reset_codes.get(email) != code:
+        return render_template("reset_password.html", email=email, error="Wrong or expired code.")
+    user = User.query.filter_by(email=email).first()
+    if user:
+        user.password_hash = generate_password_hash(password, method="pbkdf2:sha256")
+        db.session.commit()
+        reset_codes.pop(email, None)
+        return render_template("login.html", error="Password reset! You can now log in.")
+    return render_template("reset_password.html", email=email, error="Something went wrong.")
 
 @app.route("/logout")
 def logout():
@@ -108,7 +168,6 @@ def item_detail(item_id):
     item = Item.query.get_or_404(item_id)
     return render_template("item_detail.html", item=item)
 
-
 @app.route("/items/<int:item_id>/request", methods=["POST"])
 def request_item(item_id):
     item = Item.query.get_or_404(item_id)
@@ -125,6 +184,13 @@ def accept_request(request_id):
     db.session.commit()
     return redirect(url_for("item_detail", item_id=borrow.item_id))
 
+
+@app.route("/requests/<int:request_id>/reject", methods=["POST"])
+def reject_request(request_id):
+    borrow = Request.query.get_or_404(request_id)
+    borrow.status = "rejected"
+    db.session.commit()
+    return redirect(url_for("item_detail", item_id=borrow.item_id))
 
 @app.route("/items/<int:item_id>/delete", methods=["POST"])
 def delete_item(item_id):

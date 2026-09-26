@@ -10,3 +10,4 @@
 .venv/
 __pycache__/
 campus_exchange.db
+.env
