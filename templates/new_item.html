@@ -5,6 +5,9 @@
         <p><label>Title <span class="req">*</span><br><input type="text" name="title" required></label></p>
         <p><label>Category<br><input type="text" name="category"></label></p>
         <p><label>Description<br><textarea name="description"></textarea></label></p>
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600">
+            <input type="checkbox" name="is_giveaway" style="width:auto"> This is a giveaway (no return needed)
+        </label>
         <p><button type="submit">Save item</button></p>
     </form>
 {% endblock %}

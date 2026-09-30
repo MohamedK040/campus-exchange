@@ -3,6 +3,7 @@
     <p><a href="{{ url_for('home') }}">&larr; Back to items</a></p>
     <h2>{{ item.title }}</h2>
     {% if item.category %}<span class="cat">{{ item.category }}</span>{% endif %}
+    {% if item.is_giveaway %}<span class="cat" style="background:#dbf1e4;color:#1f467a">Giveaway</span>{% endif %}
     {% if item.description %}<p class="muted">{{ item.description }}</p>{% endif %}
 
     {% if current_user.is_authenticated and current_user.id == item.owner_id %}

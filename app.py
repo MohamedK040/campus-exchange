@@ -6,6 +6,7 @@ import os
 import random
 from flask_mail import Mail, Message
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 
@@ -49,7 +50,7 @@ class Item(db.Model):
     category = db.Column(db.String(60))
     owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     owner = db.relationship("User", backref="items")
-
+    is_giveaway = db.Column(db.Boolean, default=False)
 
 class Request(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -58,6 +59,11 @@ class Request(db.Model):
     status = db.Column(db.String(20), default="pending")
     item = db.relationship("Item", backref="requests")
     requester = db.relationship("User")
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    message = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 def send_reset_email(to_email, code):
     msg = Message("Campus Exchange password reset code",
@@ -161,6 +167,7 @@ def new_item():
             description=request.form["description"],
             category=request.form["category"],
             owner_id=current_user.id,
+            is_giveaway=bool(request.form.get("is_giveaway")),
         )
         db.session.add(item)
         db.session.commit()
@@ -172,6 +179,23 @@ def new_item():
 def my_items():
     items = Item.query.filter_by(owner_id=current_user.id).all()
     return render_template("my_items.html", items=items)
+
+@app.route("/my-loans")
+@login_required
+def my_loans():
+    borrowing = Request.query.filter_by(
+        requester_id=current_user.id, status="accepted"
+    ).all()
+    lending = Request.query.join(Item).filter(
+        Item.owner_id == current_user.id, Request.status == "accepted"
+    ).all()
+    return render_template("my_loans.html", borrowing=borrowing, lending=lending)
+
+@app.route("/notifications")
+@login_required
+def notifications():
+    notes = Notification.query.order_by(Notification.created_at.desc()).all()
+    return render_template("notifications.html", notes=notes)
 
 @app.route("/items/<int:item_id>")
 def item_detail(item_id):

@@ -12,6 +12,7 @@
         {% for item in items %}
             <li class="card">
             {% if item.category %}<span class="cat">{{ item.category }}</span>{% endif %}
+            {% if item.is_giveaway %}<span class="cat" style="background:#dbf1e4;color:#1f467a">Giveaway</span>{% endif %}
             <h3><a href="{{ url_for('item_detail', item_id=item.id) }}">{{ item.title }}</a></h3>
             {% if item.description %}<p>{{ item.description }}</p>{% endif %}
             </li>

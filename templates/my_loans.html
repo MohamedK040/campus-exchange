@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>My loans</h2>
+
+    <h3>Borrowing</h3>
+    {% if borrowing %}
+        <ul class="cards">
+        {% for r in borrowing %}
+            <li class="card">
+                <h3><a href="{{ url_for('item_detail', item_id=r.item.id) }}">{{ r.item.title }}</a></h3>
+                <p class="muted">Owner: {{ r.item.owner.name }}</p>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p class="muted">You're not borrowing anything right now.</p>
+    {% endif %}
+
+    <h3>Lending</h3>
+    {% if lending %}
+        <ul class="cards">
+        {% for r in lending %}
+            <li class="card">
+                <h3><a href="{{ url_for('item_detail', item_id=r.item.id) }}">{{ r.item.title }}</a></h3>
+                <p class="muted">Borrowed by: {{ r.requester.name }}</p>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p class="muted">You're not lending anything right now.</p>
+    {% endif %}
+{% endblock %}
