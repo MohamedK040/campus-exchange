@@ -1,6 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, abort
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user
+from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import random
@@ -47,14 +47,17 @@ class Item(db.Model):
     title = db.Column(db.String(140), nullable=False)
     description = db.Column(db.Text)
     category = db.Column(db.String(60))
+    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    owner = db.relationship("User", backref="items")
 
 
 class Request(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     item_id = db.Column(db.Integer, db.ForeignKey("item.id"), nullable=False)
-    requester_name = db.Column(db.String(120), nullable=False)
+    requester_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     status = db.Column(db.String(20), default="pending")
     item = db.relationship("Item", backref="requests")
+    requester = db.relationship("User")
 
 def send_reset_email(to_email, code):
     msg = Message("Campus Exchange password reset code",
@@ -150,18 +153,25 @@ def home():
 
 
 @app.route("/items/new", methods=["GET", "POST"])
+@login_required
 def new_item():
     if request.method == "POST":
         item = Item(
             title=request.form["title"],
             description=request.form["description"],
             category=request.form["category"],
+            owner_id=current_user.id,
         )
         db.session.add(item)
         db.session.commit()
         return redirect(url_for("home"))
     return render_template("new_item.html")
 
+@app.route("/my-items")
+@login_required
+def my_items():
+    items = Item.query.filter_by(owner_id=current_user.id).all()
+    return render_template("my_items.html", items=items)
 
 @app.route("/items/<int:item_id>")
 def item_detail(item_id):
@@ -169,32 +179,48 @@ def item_detail(item_id):
     return render_template("item_detail.html", item=item)
 
 @app.route("/items/<int:item_id>/request", methods=["POST"])
+@login_required
 def request_item(item_id):
     item = Item.query.get_or_404(item_id)
-    borrow = Request(item_id=item.id, requester_name=request.form["requester_name"])
+    borrow = Request(item_id=item.id, requester_id=current_user.id)
     db.session.add(borrow)
     db.session.commit()
     return redirect(url_for("item_detail", item_id=item.id))
 
 
 @app.route("/requests/<int:request_id>/accept", methods=["POST"])
+@login_required
 def accept_request(request_id):
     borrow = Request.query.get_or_404(request_id)
+    if borrow.item.owner_id != current_user.id:
+        abort(403)
     borrow.status = "accepted"
+    others = Request.query.filter(
+        Request.item_id == borrow.item_id,
+        Request.id != borrow.id,
+    ).all()
+    for other in others:
+        other.status = "rejected"
     db.session.commit()
     return redirect(url_for("item_detail", item_id=borrow.item_id))
 
 
 @app.route("/requests/<int:request_id>/reject", methods=["POST"])
+@login_required
 def reject_request(request_id):
     borrow = Request.query.get_or_404(request_id)
+    if borrow.item.owner_id != current_user.id:
+        abort(403)
     borrow.status = "rejected"
     db.session.commit()
     return redirect(url_for("item_detail", item_id=borrow.item_id))
 
 @app.route("/items/<int:item_id>/delete", methods=["POST"])
+@login_required
 def delete_item(item_id):
     item = Item.query.get_or_404(item_id)
+    if item.owner_id != current_user.id:
+        abort(403)
     Request.query.filter_by(item_id=item.id).delete()
     db.session.delete(item)
     db.session.commit()

@@ -5,36 +5,50 @@
     {% if item.category %}<span class="cat">{{ item.category }}</span>{% endif %}
     {% if item.description %}<p class="muted">{{ item.description }}</p>{% endif %}
 
-    <form method="post" action="{{ url_for('delete_item', item_id=item.id) }}"
-        onsubmit="return confirm('Are you sure you want to delete this item?');">
-        <button class="btn small ghost" type="submit">Delete item</button>
-    </form>
+    {% if current_user.is_authenticated and current_user.id == item.owner_id %}
+        {# Ägaren: hantera föremålet och se förfrågningar #}
+        <form method="post" action="{{ url_for('delete_item', item_id=item.id) }}"
+            onsubmit="return confirm('Are you sure you want to delete this item?');">
+            <button class="btn small ghost" type="submit">Delete item</button>
+        </form>
 
-    <h3>Request to borrow</h3>
-    <form method="post" action="{{ url_for('request_item', item_id=item.id) }}">
-        <label><span class="lbl">Your name</span><input type="text" name="requester_name" required></label>
-        <button type="submit">Send request</button>
-    </form>
+        <h3>Requests</h3>
+        {% if item.requests %}
+            <div>
+            {% for r in item.requests %}
+                <div class="req-row">
+                <span>{{ r.requester.name }}</span>
+                <span class="badge {{ r.status }}">{{ r.status }}</span>
+                {% if r.status == "pending" %}
+                    <form method="post" action="{{ url_for('accept_request', request_id=r.id) }}">
+                    <button class="btn small" type="submit">Accept</button>
+                    </form>
+                    <form method="post" action="{{ url_for('reject_request', request_id=r.id) }}">
+                    <button class="btn small ghost" type="submit">Reject</button>
+                    </form>
+                {% endif %}
+                </div>
+            {% endfor %}
+            </div>
+        {% else %}
+            <p class="muted">No requests yet.</p>
+        {% endif %}
 
-    <h3>Requests</h3>
-    {% if item.requests %}
-        <div>
-        {% for r in item.requests %}
-            <div class="req-row">
-            <span>{{ r.requester_name }}</span>
-            <span class="badge {{ r.status }}">{{ r.status }}</span>
-            {% if r.status == "pending" %}
-                <form method="post" action="{{ url_for('accept_request', request_id=r.id) }}">
-                <button class="btn small" type="submit">Accept</button>
-                </form>
-                <form method="post" action="{{ url_for('reject_request', request_id=r.id) }}">
-                <button class="btn small ghost" type="submit">Reject</button>
+        {% elif current_user.is_authenticated %}
+            {# Inloggad, men inte ägaren #}
+            <h3>Request to borrow</h3>
+            {% set my_req = item.requests|selectattr("requester_id", "equalto", current_user.id)|first %}
+            {% if my_req %}
+                <p class="muted">You've already requested this item —
+                    <span class="badge {{ my_req.status }}">{{ my_req.status }}</span></p>
+            {% else %}
+                <form method="post" action="{{ url_for('request_item', item_id=item.id) }}">
+                    <button type="submit">Send request</button>
                 </form>
             {% endif %}
-            </div>
-        {% endfor %}
-        </div>
+
     {% else %}
-        <p class="muted">No requests yet.</p>
+        {# Inte inloggad #}
+        <p class="muted"><a href="{{ url_for('login') }}">Log in</a> to request to borrow this item.</p>
     {% endif %}
 {% endblock %}

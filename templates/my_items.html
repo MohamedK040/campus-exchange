@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>My items</h2>
+    {% if items %}
+        {% for item in items %}
+            <div class="card">
+                <h3><a href="{{ url_for('item_detail', item_id=item.id) }}">{{ item.title }}</a></h3>
+                <p class="muted">{{ item.category }}</p>
+                <p>{{ item.description }}</p>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="muted">You haven't added any items yet. <a href="{{ url_for('new_item') }}">Add your first item</a>.</p>
+    {% endif %}
+{% endblock %}
