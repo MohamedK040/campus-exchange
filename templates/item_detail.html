@@ -5,12 +5,25 @@
     {% if item.category %}<span class="cat">{{ item.category }}</span>{% endif %}
     {% if item.is_giveaway %}<span class="cat" style="background:#dbf1e4;color:#1f467a">Giveaway</span>{% endif %}
     {% if item.description %}<p class="muted">{{ item.description }}</p>{% endif %}
+    <p class="muted" style="font-size:13px">Listed {{ item.created_at.strftime("%Y-%m-%d") }}</p>
+    {% if item.available_from or item.available_until %}
+    <p class="muted" style="font-size:13px">Available
+        {% if item.available_from %}from {{ item.available_from.strftime("%Y-%m-%d") }}{% endif %}
+        {% if item.available_until %}until {{ item.available_until.strftime("%Y-%m-%d") }}{% endif %}
+    </p>
+    {% endif %}
 
     {% if current_user.is_authenticated and current_user.id == item.owner_id %}
         {# Ägaren: hantera föremålet och se förfrågningar #}
         <form method="post" action="{{ url_for('delete_item', item_id=item.id) }}"
             onsubmit="return confirm('Are you sure you want to delete this item?');">
             <button class="btn small ghost" type="submit">Delete item</button>
+        </form>
+
+        <form method="post" action="{{ url_for('extend_item', item_id=item.id) }}" style="margin-top:8px">
+            <label><span class="lbl">Extend available until</span>
+                <input type="date" name="available_until" style="width:auto"></label>
+            <button class="btn small" type="submit">Extend</button>
         </form>
 
         <h3>Requests</h3>
@@ -26,6 +39,15 @@
                     </form>
                     <form method="post" action="{{ url_for('reject_request', request_id=r.id) }}">
                     <button class="btn small ghost" type="submit">Reject</button>
+                    </form>
+                {% endif %}
+                
+                {% if r.status == "accepted" %}
+                    <form method="post" action="{{ url_for('return_request', request_id=r.id) }}">
+                    <button class="btn small" type="submit">Mark returned</button>
+                    </form>
+                    <form method="post" action="{{ url_for('recall_request', request_id=r.id) }}">
+                    <button class="btn small ghost" type="submit">Recall</button>
                     </form>
                 {% endif %}
                 </div>

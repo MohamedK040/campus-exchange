@@ -25,6 +25,8 @@ mail = Mail(app)
 
 reset_codes = {} 
 
+pending_registrations = {}
+
 db = SQLAlchemy(app)
 
 login_manager = LoginManager(app)
@@ -51,6 +53,9 @@ class Item(db.Model):
     owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     owner = db.relationship("User", backref="items")
     is_giveaway = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    available_from = db.Column(db.Date)
+    available_until = db.Column(db.Date)
 
 class Request(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -72,6 +77,13 @@ def send_reset_email(to_email, code):
     msg.body = f"Your password reset code is: {code}"
     mail.send(msg)
 
+def send_verification_email(to_email, code):
+    msg = Message("Campus Exchange verification code",
+            sender=app.config["MAIL_USERNAME"],
+            recipients=[to_email])
+    msg.body = f"Your verification code is: {code}"
+    mail.send(msg)
+
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -88,12 +100,31 @@ def register():
             return render_template("register.html", error="Please use your BTH email address.")
         if User.query.filter_by(email=email).first():
             return render_template("register.html", error="That email is already registered.")
-        user = User(name=name, email=email, password_hash=generate_password_hash(password, method="pbkdf2:sha256"))
-        db.session.add(user)
-        db.session.commit()
-        login_user(user)
-        return redirect(url_for("home"))
+        code = str(random.randint(100000, 999999))
+        pending_registrations[email] = {
+            "name": name,
+            "password_hash": generate_password_hash(password, method="pbkdf2:sha256"),
+            "code": code,
+        }
+        session["pending_email"] = email
+        send_verification_email(email, code)
+        return render_template("verify.html", email=email)
     return render_template("register.html")
+
+@app.route("/verify", methods=["POST"])
+def verify():
+    email = session.get("pending_email")
+    code = request.form["code"]
+    pending = pending_registrations.get(email)
+    if not pending or pending["code"] != code:
+        return render_template("verify.html", email=email, error="Wrong or expired code.")
+    user = User(name=pending["name"], email=email, password_hash=pending["password_hash"])
+    db.session.add(user)
+    db.session.commit()
+    pending_registrations.pop(email, None)
+    session.pop("pending_email", None)
+    login_user(user)
+    return redirect(url_for("home"))
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -162,14 +193,30 @@ def home():
 @login_required
 def new_item():
     if request.method == "POST":
+        from_str = request.form.get("available_from")
+        until_str = request.form.get("available_until")
+        available_from = datetime.strptime(from_str, "%Y-%m-%d").date() if from_str else None
+        available_until = datetime.strptime(until_str, "%Y-%m-%d").date() if until_str else None
+        today = datetime.utcnow().date()
+        if available_from and available_from < today:
+            return render_template("new_item.html", error="'Available from' can't be in the past.")
+        if available_until and available_until < today:
+            return render_template("new_item.html", error="'Available until' can't be in the past.")
+        if available_from and available_until and available_until < available_from:
+            return render_template("new_item.html", error="'Available until' can't be before 'Available from'.")
         item = Item(
             title=request.form["title"],
             description=request.form["description"],
             category=request.form["category"],
             owner_id=current_user.id,
             is_giveaway=bool(request.form.get("is_giveaway")),
+            available_from=available_from,
+            available_until=available_until,
         )
         db.session.add(item)
+        db.session.commit()
+        note = Notification(message="New item added: " + item.title)
+        db.session.add(note)
         db.session.commit()
         return redirect(url_for("home"))
     return render_template("new_item.html")
@@ -189,7 +236,8 @@ def my_loans():
     lending = Request.query.join(Item).filter(
         Item.owner_id == current_user.id, Request.status == "accepted"
     ).all()
-    return render_template("my_loans.html", borrowing=borrowing, lending=lending)
+    today = datetime.utcnow().date()
+    return render_template("my_loans.html", borrowing=borrowing, lending=lending, today=today)
 
 @app.route("/notifications")
 @login_required
@@ -239,6 +287,27 @@ def reject_request(request_id):
     db.session.commit()
     return redirect(url_for("item_detail", item_id=borrow.item_id))
 
+@app.route("/requests/<int:request_id>/return", methods=["POST"])
+@login_required
+def return_request(request_id):
+    borrow = Request.query.get_or_404(request_id)
+    if current_user.id != borrow.requester_id and current_user.id != borrow.item.owner_id:
+        abort(403)
+    borrow.status = "returned"
+    db.session.commit()
+    return redirect(url_for("item_detail", item_id=borrow.item_id))
+
+
+@app.route("/requests/<int:request_id>/recall", methods=["POST"])
+@login_required
+def recall_request(request_id):
+    borrow = Request.query.get_or_404(request_id)
+    if current_user.id != borrow.item.owner_id:
+        abort(403)
+    borrow.status = "returned"
+    db.session.commit()
+    return redirect(url_for("item_detail", item_id=borrow.item_id))
+
 @app.route("/items/<int:item_id>/delete", methods=["POST"])
 @login_required
 def delete_item(item_id):
@@ -249,6 +318,21 @@ def delete_item(item_id):
     db.session.delete(item)
     db.session.commit()
     return redirect(url_for("home"))
+
+@app.route("/items/<int:item_id>/extend", methods=["POST"])
+@login_required
+def extend_item(item_id):
+    item = Item.query.get_or_404(item_id)
+    if item.owner_id != current_user.id:
+        abort(403)
+    new_str = request.form.get("available_until")
+    if new_str:
+        new_until = datetime.strptime(new_str, "%Y-%m-%d").date()
+        today = datetime.utcnow().date()
+        if new_until >= today:
+            item.available_until = new_until
+            db.session.commit()
+    return redirect(url_for("item_detail", item_id=item.id))
 
 
 if __name__ == "__main__":

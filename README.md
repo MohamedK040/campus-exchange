@@ -65,8 +65,50 @@ Objectives:
 
 ## How to Install and Run
 
-_(Fylls i från Sprint 2 — beskriv här hur man installerar beroenden och startar applikationen.)_
----
+### Requirements
+
+- Python 3.9 or newer
+- A Gmail account with an App Password (used to send password-reset codes)
+
+### Steps
+
+1. Clone the repository:
+
+```
+   git clone https://github.com/dipt-pa1414-ht26/pa1414-caex-hed-mokd23.git
+   cd pa1414-caex-hed-mokd23
+```
+
+2. Create and activate a virtual environment:
+
+```
+   python -m venv .venv
+   source .venv/bin/activate      # macOS / Linux
+   .venv\Scripts\activate         # Windows
+```
+
+3. Install the dependencies:
+
+```
+   pip install -r requirements.txt
+```
+
+4. Create a file named `.env` in the project root with your Gmail credentials (used to email password-reset codes):
+
+```
+   MAIL_USERNAME=your-gmail@gmail.com
+   MAIL_PASSWORD=your-16-character-app-password
+```
+
+5. Start the application:
+
+```
+   python app.py
+```
+
+6. Open http://127.0.0.1:5000 in your browser.
+
+The database (`campus_exchange.db`) is created automatically the first time you run the app, so there is no separate setup step.
 
 ## Your Backlog
 
@@ -89,7 +131,6 @@ Your repository does not come with a board already set up — see **[PROJECT_BOA
 
 You'll need a working board by the end of Sprint 1, as Status Report 3 requires it.
 
-
 ---
 
 ## Development
@@ -110,4 +151,3 @@ Your repository must remain **Private** for the entire course. This protects you
 Once Sprint 2 begins, add a **User Manual** section to this README, covering:
 - **Installing** — what's needed to set up your project locally (dependencies, environment, etc.)
 - **Running** — how to start/execute the application
-

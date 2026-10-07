@@ -9,6 +9,9 @@
             <li class="card">
                 <h3><a href="{{ url_for('item_detail', item_id=r.item.id) }}">{{ r.item.title }}</a></h3>
                 <p class="muted">Owner: {{ r.item.owner.name }}</p>
+                <form method="post" action="{{ url_for('return_request', request_id=r.id) }}">
+                    <button class="btn small" type="submit">Mark returned</button>
+                </form>
             </li>
         {% endfor %}
         </ul>

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Verify your account</h2>
+    {% if error %}<p style="color:#c1443a">{{ error }}</p>{% endif %}
+    <p class="muted" style="font-size:13px">We sent a verification code to {{ email }}. Enter it below to finish creating your account.</p>
+    <form method="post" action="{{ url_for('verify') }}">
+        <p><label>Verification code <span class="req">*</span><br><input type="text" name="code" required></label></p>
+        <p><button type="submit">Verify</button></p>
+    </form>
+{% endblock %}
