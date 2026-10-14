@@ -266,13 +266,25 @@ def accept_request(request_id):
     borrow = Request.query.get_or_404(request_id)
     if borrow.item.owner_id != current_user.id:
         abort(403)
+
+    active_loan = Request.query.filter(
+        Request.item_id == borrow.item_id,
+        Request.status == "accepted",
+        Request.id != borrow.id,
+    ).first()
+    if active_loan:
+        return redirect(url_for("item_detail", item_id=borrow.item_id))
+
     borrow.status = "accepted"
+
     others = Request.query.filter(
         Request.item_id == borrow.item_id,
         Request.id != borrow.id,
+        Request.status == "pending",
     ).all()
     for other in others:
         other.status = "rejected"
+
     db.session.commit()
     return redirect(url_for("item_detail", item_id=borrow.item_id))
 
