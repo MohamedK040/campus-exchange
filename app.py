@@ -221,6 +221,29 @@ def new_item():
         return redirect(url_for("home"))
     return render_template("new_item.html")
 
+@app.route("/items/<int:item_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_item(item_id):
+    item = Item.query.get_or_404(item_id)
+    if item.owner_id != current_user.id:
+        abort(403)
+    if request.method == "POST":
+        from_str = request.form.get("available_from")
+        until_str = request.form.get("available_until")
+        available_from = datetime.strptime(from_str, "%Y-%m-%d").date() if from_str else None
+        available_until = datetime.strptime(until_str, "%Y-%m-%d").date() if until_str else None
+        if available_from and available_until and available_until < available_from:
+            return render_template("edit_item.html", item=item, error="'Available until' can't be before 'Available from'.")
+        item.title = request.form["title"]
+        item.description = request.form["description"]
+        item.category = request.form["category"]
+        item.is_giveaway = bool(request.form.get("is_giveaway"))
+        item.available_from = available_from
+        item.available_until = available_until
+        db.session.commit()
+        return redirect(url_for("item_detail", item_id=item.id))
+    return render_template("edit_item.html", item=item)
+
 @app.route("/my-items")
 @login_required
 def my_items():
