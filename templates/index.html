@@ -13,6 +13,9 @@
             <li class="card">
             {% if item.category %}<span class="cat">{{ item.category }}</span>{% endif %}
             {% if item.is_giveaway %}<span class="cat" style="background:#dbf1e4;color:#1f467a">Giveaway</span>{% endif %}
+            {% if item.image_filename %}
+                <img src="{{ url_for('static', filename='uploads/' + item.image_filename) }}" alt="{{ item.title }}" style="width:100%;height:140px;object-fit:cover;border-radius:8px">
+            {% endif %}
             <h3><a href="{{ url_for('item_detail', item_id=item.id) }}">{{ item.title }}</a></h3>
             {% if item.description %}<p>{{ item.description }}</p>{% endif %}
             <p class="muted" style="font-size:13px">Listed {{ item.created_at.strftime("%Y-%m-%d") }}</p>

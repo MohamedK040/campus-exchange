@@ -4,8 +4,12 @@
     <h2>{{ item.title }}</h2>
     {% if item.category %}<span class="cat">{{ item.category }}</span>{% endif %}
     {% if item.is_giveaway %}<span class="cat" style="background:#dbf1e4;color:#1f467a">Giveaway</span>{% endif %}
+    {% if item.image_filename %}
+        <p><img src="{{ url_for('static', filename='uploads/' + item.image_filename) }}" alt="{{ item.title }}" style="max-width:100%;border-radius:8px"></p>
+    {% endif %}
     {% if item.description %}<p class="muted">{{ item.description }}</p>{% endif %}
     <p class="muted" style="font-size:13px">Listed {{ item.created_at.strftime("%Y-%m-%d") }}</p>
+    <p class="muted" style="font-size:13px">Owner: {{ item.owner.name }}{% if avg_rating %} — ★ {{ avg_rating }} ({{ reviews|length }}){% endif %}</p>
     {% if item.available_from or item.available_until %}
     <p class="muted" style="font-size:13px">Available
         {% if item.available_from %}from {{ item.available_from.strftime("%Y-%m-%d") }}{% endif %}
@@ -73,9 +77,24 @@
             {# Inloggad, men inte ägaren #}
             <h3>Request to borrow</h3>
             {% set my_req = item.requests|selectattr("requester_id", "equalto", current_user.id)|first %}
-            {% if my_req %}
+                        {% if my_req %}
                 <p class="muted">You've already requested this item —
                     <span class="badge {{ my_req.status }}">{{ my_req.status }}</span></p>
+                {% if my_req.status == "returned" %}
+                    <h3>Leave a review</h3>
+                    <form method="post" action="{{ url_for('leave_review', request_id=my_req.id) }}">
+                        <p><label>Rating<br>
+                            <select name="rating">
+                                <option value="5">5 - Excellent</option>
+                                <option value="4">4 - Good</option>
+                                <option value="3">3 - Okay</option>
+                                <option value="2">2 - Poor</option>
+                                <option value="1">1 - Bad</option>
+                            </select></label></p>
+                        <p><label>Comment<br><textarea name="comment"></textarea></label></p>
+                        <p><button type="submit">Submit review</button></p>
+                    </form>
+                {% endif %}
             {% else %}
                 <form method="post" action="{{ url_for('request_item', item_id=item.id) }}">
                     <button type="submit">Send request</button>
@@ -85,5 +104,16 @@
     {% else %}
         {# Inte inloggad #}
         <p class="muted"><a href="{{ url_for('login') }}">Log in</a> to request to borrow this item.</p>
+    {% endif %}
+
+    {% if reviews %}
+        <h3>Reviews of {{ item.owner.name }}</h3>
+        {% for rev in reviews %}
+            <div class="req-row">
+                <span>★ {{ rev.rating }}</span>
+                {% if rev.comment %}<span>{{ rev.comment }}</span>{% endif %}
+                <span class="muted" style="font-size:13px">— {{ rev.author.name }}</span>
+            </div>
+        {% endfor %}
     {% endif %}
 {% endblock %}

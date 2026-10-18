@@ -2,10 +2,11 @@
 {% block content %}
     <h2>Add an item</h2>
     {% if error %}<p style="color:#c1443a">{{ error }}</p>{% endif %}
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         <p><label>Title <span class="req">*</span><br><input type="text" name="title" required></label></p>
         <p><label>Category<br><input type="text" name="category"></label></p>
         <p><label>Description<br><textarea name="description"></textarea></label></p>
+        <p><label>Photo<br><input type="file" name="image" accept="image/*"></label></p>
         <p><label><span class="lbl">Available from</span><input type="date" name="available_from"></label></p>
         <p><label><span class="lbl">Available until</span><input type="date" name="available_until"></label></p>
         <label style="display:flex;align-items:center;gap:8px;font-weight:600">

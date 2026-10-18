@@ -7,11 +7,14 @@ import random
 from flask_mail import Mail, Message
 from dotenv import load_dotenv
 from datetime import datetime
+from werkzeug.utils import secure_filename
 
 load_dotenv()
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
+app.config["UPLOAD_FOLDER"] = os.path.join(basedir, "static", "uploads")
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(basedir, "campus_exchange.db")
 app.config["SECRET_KEY"] = "change-this-to-something-secret"
 
@@ -56,6 +59,7 @@ class Item(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     available_from = db.Column(db.Date)
     available_until = db.Column(db.Date)
+    image_filename = db.Column(db.String(255))
 
 class Request(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -69,6 +73,18 @@ class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     message = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+
+class Review(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    rating = db.Column(db.Integer, nullable=False)
+    comment = db.Column(db.Text)
+    author_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    target_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    request_id = db.Column(db.Integer, db.ForeignKey("request.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    author = db.relationship("User", foreign_keys=[author_id])
+    target = db.relationship("User", foreign_keys=[target_id])
 
 def send_reset_email(to_email, code):
     msg = Message("Campus Exchange password reset code",
@@ -204,6 +220,14 @@ def new_item():
             return render_template("new_item.html", error="'Available until' can't be in the past.")
         if available_from and available_until and available_until < available_from:
             return render_template("new_item.html", error="'Available until' can't be before 'Available from'.")
+
+        image_filename = None
+        file = request.files.get("image")
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            image_filename = str(random.randint(10000, 99999)) + "_" + filename
+            file.save(os.path.join(app.config["UPLOAD_FOLDER"], image_filename))
+
         item = Item(
             title=request.form["title"],
             description=request.form["description"],
@@ -212,6 +236,7 @@ def new_item():
             is_giveaway=bool(request.form.get("is_giveaway")),
             available_from=available_from,
             available_until=available_until,
+            image_filename=image_filename,
         )
         db.session.add(item)
         db.session.commit()
@@ -265,13 +290,20 @@ def my_loans():
 @app.route("/notifications")
 @login_required
 def notifications():
-    notes = Notification.query.order_by(Notification.created_at.desc()).all()
+    notes = Notification.query.filter(
+        (Notification.user_id == current_user.id) | (Notification.user_id == None)
+    ).order_by(Notification.created_at.desc()).all()
     return render_template("notifications.html", notes=notes)
 
 @app.route("/items/<int:item_id>")
 def item_detail(item_id):
     item = Item.query.get_or_404(item_id)
-    return render_template("item_detail.html", item=item)
+    reviews = Review.query.filter_by(target_id=item.owner_id).order_by(Review.created_at.desc()).all()
+    if reviews:
+        avg_rating = round(sum(r.rating for r in reviews) / len(reviews), 1)
+    else:
+        avg_rating = None
+    return render_template("item_detail.html", item=item, reviews=reviews, avg_rating=avg_rating)
 
 @app.route("/items/<int:item_id>/request", methods=["POST"])
 @login_required
@@ -279,6 +311,9 @@ def request_item(item_id):
     item = Item.query.get_or_404(item_id)
     borrow = Request(item_id=item.id, requester_id=current_user.id)
     db.session.add(borrow)
+    db.session.commit()
+    note = Notification(message=current_user.name + " requested to borrow " + item.title, user_id=item.owner_id)
+    db.session.add(note)
     db.session.commit()
     return redirect(url_for("item_detail", item_id=item.id))
 
@@ -308,9 +343,11 @@ def accept_request(request_id):
     for other in others:
         other.status = "rejected"
 
+    note = Notification(message="Your request for " + borrow.item.title + " was accepted.", user_id=borrow.requester_id)
+    db.session.add(note)
+
     db.session.commit()
     return redirect(url_for("item_detail", item_id=borrow.item_id))
-
 
 @app.route("/requests/<int:request_id>/reject", methods=["POST"])
 @login_required
@@ -319,6 +356,8 @@ def reject_request(request_id):
     if borrow.item.owner_id != current_user.id:
         abort(403)
     borrow.status = "rejected"
+    note = Notification(message="Your request for " + borrow.item.title + " was rejected.", user_id=borrow.requester_id)
+    db.session.add(note)
     db.session.commit()
     return redirect(url_for("item_detail", item_id=borrow.item_id))
 
@@ -340,6 +379,28 @@ def recall_request(request_id):
     if current_user.id != borrow.item.owner_id:
         abort(403)
     borrow.status = "returned"
+    db.session.commit()
+    return redirect(url_for("item_detail", item_id=borrow.item_id))
+
+@app.route("/requests/<int:request_id>/review", methods=["POST"])
+@login_required
+def leave_review(request_id):
+    borrow = Request.query.get_or_404(request_id)
+    if borrow.requester_id != current_user.id:
+        abort(403)
+    if borrow.status != "returned":
+        abort(403)
+    existing = Review.query.filter_by(request_id=borrow.id, author_id=current_user.id).first()
+    if existing:
+        return redirect(url_for("item_detail", item_id=borrow.item_id))
+    review = Review(
+        rating=int(request.form["rating"]),
+        comment=request.form.get("comment", ""),
+        author_id=current_user.id,
+        target_id=borrow.item.owner_id,
+        request_id=borrow.id,
+    )
+    db.session.add(review)
     db.session.commit()
     return redirect(url_for("item_detail", item_id=borrow.item_id))
 
