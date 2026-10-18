@@ -9,7 +9,7 @@
     {% endif %}
     {% if item.description %}<p class="muted">{{ item.description }}</p>{% endif %}
     <p class="muted" style="font-size:13px">Listed {{ item.created_at.strftime("%Y-%m-%d") }}</p>
-    <p class="muted" style="font-size:13px">Owner: {{ item.owner.name }}{% if avg_rating %} — ★ {{ avg_rating }} ({{ reviews|length }}){% endif %}</p>
+    <p class="muted" style="font-size:13px">Owner: {{ item.owner.name }}{% if avg_rating %} — <span class="stars">★</span> {{ avg_rating }} ({{ reviews|length }}){% endif %}</p>
     {% if item.available_from or item.available_until %}
     <p class="muted" style="font-size:13px">Available
         {% if item.available_from %}from {{ item.available_from.strftime("%Y-%m-%d") }}{% endif %}
@@ -18,12 +18,13 @@
     {% endif %}
 
     {% if current_user.is_authenticated and current_user.id == item.owner_id %}
-        <a class="btn small" href="{{ url_for('edit_item', item_id=item.id) }}">Edit item</a>
-
-        <form method="post" action="{{ url_for('delete_item', item_id=item.id) }}"
-            onsubmit="return confirm('Are you sure you want to delete this item?');">
-            <button class="btn small ghost" type="submit">Delete item</button>
-        </form>
+        <div style="display:flex;gap:8px;align-items:center">
+            <a class="btn small" href="{{ url_for('edit_item', item_id=item.id) }}">Edit item</a>
+            <form method="post" action="{{ url_for('delete_item', item_id=item.id) }}"
+                onsubmit="return confirm('Are you sure you want to delete this item?');">
+                <button class="btn small ghost" type="submit">Delete item</button>
+            </form>
+        </div>
 
         <form method="post" action="{{ url_for('extend_item', item_id=item.id) }}" style="margin-top:8px">
             <label><span class="lbl">Extend available until</span>
@@ -110,8 +111,8 @@
         <h3>Reviews of {{ item.owner.name }}</h3>
         {% for rev in reviews %}
             <div class="req-row">
-                <span>★ {{ rev.rating }}</span>
-                {% if rev.comment %}<span>{{ rev.comment }}</span>{% endif %}
+                <span class="stars">★ {{ rev.rating }}</span>
+                                {% if rev.comment %}<span>{{ rev.comment }}</span>{% endif %}
                 <span class="muted" style="font-size:13px">— {{ rev.author.name }}</span>
             </div>
         {% endfor %}
