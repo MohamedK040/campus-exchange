@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="sv">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Campus Exchange</title>
+    <style>
+        :root{
+        --bg:#f5f8f7; --surface:#ffffff; --ink:#17211f; --muted:#5f6f6a;
+        --line:#e4ebe8; --accent:#0e2b7c; --accent-dark:#0b2c61; --accent-soft:#e3f2ef;
+        }
+        *{box-sizing:border-box}
+        body{margin:0;background:var(--bg);color:var(--ink);
+        font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.55}
+        a{color:var(--accent);text-decoration:none}
+        a:hover{text-decoration:underline}
+
+        header.site{background:var(--surface);border-bottom:1px solid var(--line)}
+        .bar{max-width:760px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;
+        justify-content:space-between;gap:16px;flex-wrap:wrap}
+        .brand{font-size:20px;font-weight:800;color:var(--ink);letter-spacing:-.02em}
+        .brand:hover{text-decoration:none}
+        nav{display:flex;align-items:center;gap:16px;font-size:14px}
+        nav .who{color:var(--muted)}
+
+        main{max-width:760px;margin:0 auto;padding:28px 20px 60px}
+        h2{font-size:22px;letter-spacing:-.01em;margin:0 0 16px}
+        h3{font-size:16px;margin:24px 0 10px}
+
+        button,.btn{display:inline-block;background:var(--accent);color:#fff;border:none;border-radius:8px;
+        padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer}
+        button:hover,.btn:hover{background:var(--accent-dark);text-decoration:none}
+        .btn.small{padding:5px 10px;font-size:13px}
+        button.ghost,.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
+
+        input,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;
+        font-size:14px;font-family:inherit;background:var(--surface)}
+        input:focus,textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+        label{display:block;font-size:13px;font-weight:600;margin-bottom:14px}
+        label .lbl{display:block;margin-bottom:4px;color:var(--muted)}
+
+        .search{display:flex;gap:8px;margin-bottom:20px}
+        .search input{flex:1}
+
+        .cards{list-style:none;margin:0;padding:0;display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+        .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;transition:box-shadow .15s,transform .15s}
+        .card:hover{box-shadow:0 4px 14px rgba(0,0,0,.07);transform:translateY(-2px)}
+        .card h3{margin:0 0 4px;font-size:17px}
+        .cat{display:inline-block;background:var(--accent-soft);color:var(--accent);
+        font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px;margin-bottom:6px}
+        .card p{margin:6px 0 0;color:var(--muted);font-size:14px}
+
+        .badge{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;text-transform:capitalize}
+        .badge.pending{background:#fdf0dc;color:#a5670f}
+        .badge.accepted{background:#dbf1e4;color:#1f467a}
+        .badge.rejected{background:#f7dedb;color:#b23b30}
+        .badge.returned{background:#e4ebe8;color:#5f6f6a}
+
+        .empty{color:var(--muted);background:var(--surface);border:1px dashed var(--line);
+        border-radius:12px;padding:24px;text-align:center}
+        .muted{color:var(--muted)}
+        .stars{color:#e6a700;font-weight:700}
+        .req-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+        .req-row:last-child{border-bottom:none}
+        .req-row form{display:inline;margin:0}
+        .req{color:#c1443a;font-weight:700}
+
+        @media (max-width: 600px) {
+            .bar { padding: 12px 16px; }
+            nav { gap: 12px; font-size: 13px; }
+            main { padding: 20px 16px 40px; }
+            h2 { font-size: 20px; }
+            .brand { font-size: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="site">
+        <div class="bar">
+        <a class="brand" href="{{ url_for('home') }}">Campus Exchange</a>
+            <nav>
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('new_item') }}">+ Add item</a>
+                <a href="{{ url_for('my_items') }}">My items</a>
+                <a href="{{ url_for('notifications') }}">Notifications</a>
+                <a href="{{ url_for('my_loans') }}">My loans</a>
+                <span class="who">{{ current_user.name }}</span>
+                <a href="{{ url_for('logout') }}">Log out</a>
+                {% else %}
+                <a href="{{ url_for('login') }}">Log in</a>
+                <a href="{{ url_for('register') }}">Register</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
