@@ -1,16 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
     <h2>Notifications</h2>
+    <p class="page-sub">Stay up to date with your requests and items.</p>
     {% if notes %}
-        <div>
+        <div class="panel">
         {% for n in notes %}
-            <div class="req-row">
-                <span>{{ n.message }}</span>
-                <span class="muted" style="font-size:13px">{{ n.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
+            <div class="note-row">
+                <span class="avatar">{{ n.message[0]|upper }}</span>
+                <div class="note-text"><strong>{{ n.message }}</strong></div>
+                <span class="note-time">{{ n.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
             </div>
         {% endfor %}
         </div>
     {% else %}
-        <p class="muted">No notifications yet.</p>
+        <div class="empty">No notifications yet.</div>
     {% endif %}
 {% endblock %}

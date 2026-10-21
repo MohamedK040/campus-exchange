@@ -1,104 +1,36 @@
 from flask import Flask, render_template, request, redirect, url_for, session, abort
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
+from extensions import db, mail
+from models import User, Item, Request, Notification, Review
+from config import Config
+from emails import send_reset_email, send_verification_email
+from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import random
-from flask_mail import Mail, Message
-from dotenv import load_dotenv
 from datetime import datetime
 from werkzeug.utils import secure_filename
 
-load_dotenv()
 
 app = Flask(__name__)
-basedir = os.path.abspath(os.path.dirname(__file__))
-app.config["UPLOAD_FOLDER"] = os.path.join(basedir, "static", "uploads")
+app.config.from_object(Config)
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(basedir, "campus_exchange.db")
-app.config["SECRET_KEY"] = "change-this-to-something-secret"
 
-app.config["MAIL_SERVER"] = "smtp.gmail.com"
-app.config["MAIL_PORT"] = 587
-app.config["MAIL_USE_TLS"] = True
-app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME")
-app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
 
-mail = Mail(app)
+mail.init_app(app)
 
 reset_codes = {} 
 
 pending_registrations = {}
 
-db = SQLAlchemy(app)
+db.init_app(app)
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 
 
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
-
-
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
-
-
-class Item(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(140), nullable=False)
-    description = db.Column(db.Text)
-    category = db.Column(db.String(60))
-    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-    owner = db.relationship("User", backref="items")
-    is_giveaway = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    available_from = db.Column(db.Date)
-    available_until = db.Column(db.Date)
-    image_filename = db.Column(db.String(255))
-
-class Request(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    item_id = db.Column(db.Integer, db.ForeignKey("item.id"), nullable=False)
-    requester_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    status = db.Column(db.String(20), default="pending")
-    item = db.relationship("Item", backref="requests")
-    requester = db.relationship("User")
-
-class Notification(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    message = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-
-class Review(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    rating = db.Column(db.Integer, nullable=False)
-    comment = db.Column(db.Text)
-    author_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    target_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    request_id = db.Column(db.Integer, db.ForeignKey("request.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    author = db.relationship("User", foreign_keys=[author_id])
-    target = db.relationship("User", foreign_keys=[target_id])
-
-def send_reset_email(to_email, code):
-    msg = Message("Campus Exchange password reset code",
-            sender=app.config["MAIL_USERNAME"],
-            recipients=[to_email])
-    msg.body = f"Your password reset code is: {code}"
-    mail.send(msg)
-
-def send_verification_email(to_email, code):
-    msg = Message("Campus Exchange verification code",
-            sender=app.config["MAIL_USERNAME"],
-            recipients=[to_email])
-    msg.body = f"Your verification code is: {code}"
-    mail.send(msg)
 
 
 @app.route("/register", methods=["GET", "POST"])

@@ -11,3 +11,5 @@
 __pycache__/
 campus_exchange.db
 .env
+_backup/
+*.bak

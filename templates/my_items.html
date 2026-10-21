@@ -1,15 +1,26 @@
 {% extends "base.html" %}
 {% block content %}
     <h2>My items</h2>
+    <p class="page-sub">Everything you've listed on Campus Exchange.</p>
     {% if items %}
+        <ul class="cards">
         {% for item in items %}
-            <div class="card">
-                <h3><a href="{{ url_for('item_detail', item_id=item.id) }}">{{ item.title }}</a></h3>
-                <p class="muted">{{ item.category }}</p>
-                <p>{{ item.description }}</p>
-            </div>
+            <li class="card item-card">
+                <a class="card-image" href="{{ url_for('item_detail', item_id=item.id) }}">
+                    {% if item.image_filename %}
+                        <img src="{{ url_for('static', filename='uploads/' + item.image_filename) }}" alt="{{ item.title }}">
+                    {% endif %}
+                    {% if item.is_giveaway %}<span class="category tone-green">Giveaway</span>
+                    {% elif item.category %}<span class="category tone-blue">{{ item.category }}</span>{% endif %}
+                </a>
+                <div class="card-body">
+                    <h3><a href="{{ url_for('item_detail', item_id=item.id) }}">{{ item.title }}</a></h3>
+                    {% if item.description %}<p>{{ item.description }}</p>{% endif %}
+                </div>
+            </li>
         {% endfor %}
+        </ul>
     {% else %}
-        <p class="muted">You haven't added any items yet. <a href="{{ url_for('new_item') }}">Add your first item</a>.</p>
+        <div class="empty">You haven't added any items yet. <a href="{{ url_for('new_item') }}">Add your first item</a>.</div>
     {% endif %}
 {% endblock %}

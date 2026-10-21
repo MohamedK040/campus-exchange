@@ -1,25 +1,26 @@
 {% extends "base.html" %}
 {% block content %}
     <h2>My loans</h2>
+    <p class="page-sub">Track what you're borrowing and lending.</p>
 
-    <h3>Borrowing</h3>
+    <p class="sub-head">Borrowing</p>
     {% if borrowing %}
         <ul class="cards">
         {% for r in borrowing %}
             <li class="card">
                 <h3><a href="{{ url_for('item_detail', item_id=r.item.id) }}">{{ r.item.title }}</a></h3>
                 <p class="muted">Owner: {{ r.item.owner.name }}</p>
-                <form method="post" action="{{ url_for('return_request', request_id=r.id) }}">
+                <form method="post" action="{{ url_for('return_request', request_id=r.id) }}" style="margin-top:12px">
                     <button class="btn small" type="submit">Mark returned</button>
                 </form>
             </li>
         {% endfor %}
         </ul>
     {% else %}
-        <p class="muted">You're not borrowing anything right now.</p>
+        <div class="empty">You're not borrowing anything right now.</div>
     {% endif %}
 
-    <h3>Lending</h3>
+    <p class="sub-head">Lending</p>
     {% if lending %}
         <ul class="cards">
         {% for r in lending %}
@@ -30,6 +31,6 @@
         {% endfor %}
         </ul>
     {% else %}
-        <p class="muted">You're not lending anything right now.</p>
+        <div class="empty">You're not lending anything right now.</div>
     {% endif %}
 {% endblock %}
