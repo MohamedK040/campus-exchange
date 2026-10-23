@@ -5,7 +5,7 @@
     {% if item.category %}<span class="cat">{{ item.category }}</span>{% endif %}
     {% if item.is_giveaway %}<span class="cat" style="background:#dbf1e4;color:#1f467a">Giveaway</span>{% endif %}
     {% if item.image_filename %}
-        <p><img src="{{ url_for('static', filename='uploads/' + item.image_filename) }}" alt="{{ item.title }}" style="max-width:100%;border-radius:8px"></p>
+        <p><img src="{{ url_for('static', filename='uploads/' + item.image_filename) }}" alt="{{ item.title }}" style="max-width:100%;max-height:420px;border-radius:12px"></p>
     {% endif %}
     {% if item.description %}<p class="muted">{{ item.description }}</p>{% endif %}
     <p class="muted" style="font-size:13px">Listed {{ item.created_at.strftime("%Y-%m-%d") }}</p>
