@@ -41,7 +41,7 @@
             <div>
             {% for r in item.requests %}
                 <div class="req-row">
-                <span>{{ r.requester.name }}</span>
+                <span>{{ r.requester.name }}{% if r.requester.avg_rating %} <span class="stars">★ {{ r.requester.avg_rating }}</span>{% endif %}</span>
                 <span class="badge {{ r.status }}">{{ r.status }}</span>
                 {% if r.status == "pending" %}
                     {% if active_loan %}
@@ -67,6 +67,24 @@
                     <button class="btn small ghost" type="submit">Recall</button>
                     </form>
                 {% endif %}
+                {% if r.status == "returned" %}
+                    {% set owner_review = r.reviews|selectattr("author_id", "equalto", current_user.id)|first %}
+                    {% if owner_review %}
+                        <span class="muted" style="font-size:13px">You reviewed this borrower</span>
+                    {% else %}
+                    <form method="post" action="{{ url_for('leave_review', request_id=r.id) }}" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px">
+                        <select name="rating" style="width:auto">
+                            <option value="5">5 ★</option>
+                            <option value="4">4 ★</option>
+                            <option value="3">3 ★</option>
+                            <option value="2">2 ★</option>
+                            <option value="1">1 ★</option>
+                        </select>
+                        <input type="text" name="comment" placeholder="Review this borrower..." style="width:auto">
+                        <button class="btn small" type="submit">Review borrower</button>
+                    </form>
+                    {% endif %}
+                {% endif %}
                 </div>
             {% endfor %}
             </div>
@@ -82,6 +100,10 @@
                 <p class="muted">You've already requested this item —
                     <span class="badge {{ my_req.status }}">{{ my_req.status }}</span></p>
                 {% if my_req.status == "returned" %}
+                    {% set my_owner_review = my_req.reviews|selectattr("author_id", "equalto", current_user.id)|first %}
+                    {% if my_owner_review %}
+                        <p class="muted">You've reviewed the owner.</p>
+                    {% else %}
                     <h3>Leave a review</h3>
                     <form method="post" action="{{ url_for('leave_review', request_id=my_req.id) }}">
                         <p><label>Rating<br>
@@ -95,6 +117,7 @@
                         <p><label>Comment<br><textarea name="comment"></textarea></label></p>
                         <p><button type="submit">Submit review</button></p>
                     </form>
+                    {% endif %}
                 {% endif %}
             {% else %}
                 <form method="post" action="{{ url_for('request_item', item_id=item.id) }}">

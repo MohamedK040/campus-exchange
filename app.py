@@ -318,9 +318,13 @@ def recall_request(request_id):
 @login_required
 def leave_review(request_id):
     borrow = Request.query.get_or_404(request_id)
-    if borrow.requester_id != current_user.id:
-        abort(403)
     if borrow.status != "returned":
+        abort(403)
+    if current_user.id == borrow.requester_id:
+        target_id = borrow.item.owner_id
+    elif current_user.id == borrow.item.owner_id:
+        target_id = borrow.requester_id
+    else:
         abort(403)
     existing = Review.query.filter_by(request_id=borrow.id, author_id=current_user.id).first()
     if existing:
@@ -329,7 +333,7 @@ def leave_review(request_id):
         rating=int(request.form["rating"]),
         comment=request.form.get("comment", ""),
         author_id=current_user.id,
-        target_id=borrow.item.owner_id,
+        target_id=target_id,
         request_id=borrow.id,
     )
     db.session.add(review)
@@ -366,4 +370,4 @@ def extend_item(item_id):
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(debug=True, port=5001)

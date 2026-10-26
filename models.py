@@ -9,6 +9,17 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
 
+    @property
+    def avg_rating(self):
+        reviews = Review.query.filter_by(target_id=self.id).all()
+        if not reviews:
+            return None
+        return round(sum(r.rating for r in reviews) / len(reviews), 1)
+
+    @property
+    def rating_count(self):
+        return Review.query.filter_by(target_id=self.id).count()
+
 
 class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -50,3 +61,4 @@ class Review(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     author = db.relationship("User", foreign_keys=[author_id])
     target = db.relationship("User", foreign_keys=[target_id])
+    request = db.relationship("Request", backref="reviews")
