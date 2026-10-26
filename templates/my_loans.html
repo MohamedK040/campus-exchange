@@ -10,6 +10,11 @@
             <li class="card">
                 <h3><a href="{{ url_for('item_detail', item_id=r.item.id) }}">{{ r.item.title }}</a></h3>
                 <p class="muted">Owner: {{ r.item.owner.name }}</p>
+                {% if r.item.available_until %}
+                    <p class="muted" style="font-size:13px">Return by {{ r.item.available_until.strftime("%Y-%m-%d") }}
+                        {% if r.item.available_until < today %}<span class="badge rejected">Overdue</span>{% endif %}
+                    </p>
+                {% endif %}
                 <form method="post" action="{{ url_for('return_request', request_id=r.id) }}" style="margin-top:12px">
                     <button class="btn small" type="submit">Mark returned</button>
                 </form>
@@ -27,6 +32,11 @@
             <li class="card">
                 <h3><a href="{{ url_for('item_detail', item_id=r.item.id) }}">{{ r.item.title }}</a></h3>
                 <p class="muted">Borrowed by: {{ r.requester.name }}</p>
+                {% if r.item.available_until %}
+                    <p class="muted" style="font-size:13px">Return by {{ r.item.available_until.strftime("%Y-%m-%d") }}
+                        {% if r.item.available_until < today %}<span class="badge rejected">Overdue</span>{% endif %}
+                    </p>
+                {% endif %}
             </li>
         {% endfor %}
         </ul>
