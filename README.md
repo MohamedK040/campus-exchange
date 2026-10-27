@@ -106,7 +106,7 @@ Objectives:
    python app.py
 ```
 
-6. Open http://127.0.0.1:5000 in your browser.
+6. Open http://127.0.0.1:5001 in your browser.
 
 The database (`campus_exchange.db`) is created automatically the first time you run the app, so there is no separate setup step.
 
