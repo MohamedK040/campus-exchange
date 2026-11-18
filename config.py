@@ -9,7 +9,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config:
     UPLOAD_FOLDER = os.path.join(basedir, "static", "uploads")
     SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(basedir, "campus_exchange.db")
-    SECRET_KEY = "change-this-to-something-secret"
+    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me")
     MAIL_SERVER = "smtp.gmail.com"
     MAIL_PORT = 587
     MAIL_USE_TLS = True
