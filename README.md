@@ -19,6 +19,14 @@ customer and delivered in sprints with demos.
 - Two-way reviews and ratings to build trust between users
 - Password reset via emailed code
 
+## Screenshots
+
+![Home page with search](screenshots/home.png)
+
+![My loans – overview of borrowed and lent items](screenshots/my-loans.png)
+
+![Add an item](screenshots/add-item.png)
+
 ## Tech stack
 Python · Flask · Flask-SQLAlchemy (SQLite) · Flask-Login · Flask-Mail · HTML/CSS
 
